@@ -15,6 +15,7 @@ Each new level adds one more enemy to the screen, so the game gets progressively
 - [How to Play](#how-to-play)
   - [Controls](#controls)
   - [Rules](#rules)
+  - [Scoring and High Scores](#scoring-and-high-scores)
 - [Project Structure](#project-structure)
 - [Code Overview](#code-overview)
 - [Assets](#assets)
@@ -26,20 +27,23 @@ Each new level adds one more enemy to the screen, so the game gets progressively
 
 ## Features
 
-- Main menu with **Start** / **Quit** options and sound feedback
+- Main menu with **Start** / **High Scores** / **Quit** options and sound feedback
 - Player spaceship with free movement in four directions
 - Shooting with sound effects
 - Enemies with different movement patterns (straight line and zig-zag) and random speeds
 - Increasing difficulty: level *N* spawns *N* enemies
 - Lives system (3 lives) with a "Game Over / Play again" screen
+- Score counter and a persistent **top 10 high-score table** with initials entry
+- **Pause menu** (Resume / Main Menu / Quit) during play
+- Procedural **explosion animations** for destroyed enemies and the player's ship
+- Looping chiptune **background music**
 - Rotating backgrounds that change from level to level
-- Explosion sound when an enemy is hit
 
 ---
 
 ## Requirements
 
-- **Python 3.10 or newer** (the menu uses the `match` statement introduced in Python 3.10)
+- **Python 3.10 or newer** (the code uses the `match` statement introduced in Python 3.10)
 - **Pygame 2.6.0** (listed in `requirements.txt`)
 
 ---
@@ -85,7 +89,8 @@ python main.py
 ```
 
 > **Note:** The game loads its images and sounds using paths relative to the current working directory
-> (e.g. `assets/1.jpg`), so it must be launched from the project root.
+> (e.g. `assets/1.jpg`), and stores high scores in `highscores.json` in the same directory,
+> so it must be launched from the project root.
 
 ---
 
@@ -95,14 +100,17 @@ python main.py
 
 | Key | Where | Action |
 |-----|-------|--------|
-| `↑` / `↓` | Menu | Move between **Start** and **Quit** |
-| `Enter` | Menu | Confirm selection |
+| `↑` / `↓` | Main menu / pause menu | Move between options |
+| `Enter` | Main menu / pause menu | Confirm selection |
+| `Enter` / `Esc` | High Scores screen | Return to the main menu |
 | `←` `→` `↑` `↓` | In game | Move the spaceship |
 | `Space` | In game | Fire |
+| `Esc` / `P` | In game | Open the pause menu (press again to resume) |
 | `Space` | Level / lives screen | Continue to the next round |
+| `A`–`Z`, `Backspace`, `Enter` | Game Over screen | Type your initials for a new high score and confirm |
 | `Y` | Game Over screen | Play again (restarts from level 1 with 3 lives) |
 | `N` | Game Over screen | Quit the game |
-| `Esc` | Anytime in game | Quit the game |
+| `Esc` | Level / lives and Game Over screens | Quit the game |
 
 ### Rules
 
@@ -113,8 +121,16 @@ python main.py
   so **every enemy must be destroyed** to clear the level.
 - Only **one bullet** can be on screen at a time; you can fire again once the previous bullet hits a
   target or leaves the screen.
-- If an enemy collides with your ship you **lose a life** and the current level restarts.
+- If an enemy collides with your ship it explodes, you **lose a life** and the current level restarts.
 - When all your lives are gone the **Game Over** screen appears and you can choose to play again.
+
+### Scoring and High Scores
+
+- Each enemy destroyed is worth **10 × the current level** points.
+- The current score is shown in the top-left corner during play and on the in-between screens.
+- If your final score makes the **top 10**, the Game Over screen asks for your initials (up to 3 letters).
+- High scores are saved in `highscores.json` in the project root (ignored by git) and can be viewed
+  from the main menu or on the Game Over screen.
 
 ---
 
@@ -123,16 +139,19 @@ python main.py
 ```
 starfighter/
 ├── main.py               # Entry point – initializes Pygame, runs the menu and the main game loop
-├── menu.py               # Main menu (Start / Quit)
-├── game.py               # Game state, level setup, input handling and rendering
+├── menu.py               # Main menu (Start / High Scores / Quit)
+├── pause_menu.py         # In-game pause menu (Resume / Main Menu / Quit)
+├── game.py               # Game state, level setup, input handling, scoring and rendering
 ├── player.py             # Player spaceship
 ├── enemy.py              # Enemy spaceship
 ├── enemy_animations.py   # Enemy movement patterns (line, zig_zag, circle)
 ├── bullet.py             # Player bullet
 ├── collision.py          # Hitbox-based collision detection
+├── explosion.py          # Procedural particle explosion animation
+├── high_scores.py        # Top 10 high-score table, stored in highscores.json
 ├── requirements.txt      # Python dependencies
 └── assets/               # Images, backgrounds and sounds
-    └── sounds/           # Sound effects (bullet, menu change, explosion)
+    └── sounds/           # Sound effects and background music
 ```
 
 ---
@@ -140,24 +159,41 @@ starfighter/
 ## Code Overview
 
 ### `main.py`
-The entry point. It initializes Pygame, shows the `Menu`, and then runs the main loop at 60 FPS.
-It handles global events (quit, `Esc`, continue / play-again keys), detects when all enemies are
-destroyed to advance to the next level, and draws the in-between screens ("Lives / Level" and
-"Game Over").
+The entry point. It initializes Pygame, starts the background music, shows the `Menu`, and then runs
+the main loop at 60 FPS. It handles global events (quit, `Esc`, pause, continue / play-again keys,
+initials entry), detects when all enemies are destroyed (and their explosions have finished) to
+advance to the next level, and draws the in-between screens ("Lives / Level / Score" and "Game Over").
 
 ### `game.py` – `Game`
-Holds the overall game state: current level, player, enemies, bullet, backgrounds and sounds.
+Holds the overall game state: current level, score, player, enemies, bullet, explosions,
+backgrounds and sounds. It is the only place that creates the game window (`pygame.display.set_mode`);
+every other screen draws onto the existing window.
 
 - `init_game()` – creates `level` enemies with a random movement pattern and speed (3–5),
-  resets the player position and un-pauses the game.
+  clears explosions, resets the player position and un-pauses the game.
 - `handle()` – processes keyboard input for movement and shooting, draws the background,
-  bullet, player and enemies, respawns enemies that leave the screen and checks collisions
-  (bullet ↔ enemy and enemy ↔ player).
+  bullet, player, enemies, explosions and score, respawns enemies that leave the screen and checks
+  collisions (bullet ↔ enemy and enemy ↔ player). After the player is hit, it waits for the
+  explosion to finish before taking a life and pausing.
 
 ### `menu.py` – `Menu`
-A blocking loop that renders the menu background with the **Start** and **Quit** options.
-The selected option is highlighted in green. Selecting **Start** returns control to `main.py`;
-selecting **Quit** exits the program.
+A blocking loop that renders the menu background with the **Start**, **High Scores** and **Quit**
+options. The selected option is highlighted in green. Selecting **Start** returns control to
+`main.py`, **High Scores** shows the high-score table, and **Quit** exits the program.
+
+### `pause_menu.py` – `PauseMenu`
+A blocking loop that draws a dimmed snapshot of the last game frame with the **Resume**,
+**Main Menu** and **Quit** options, and returns the chosen action to `main.py`.
+The background music is paused while it is open.
+
+### `high_scores.py` – `HighScores`
+Loads and saves the top 10 scores in `highscores.json`, checks whether a score qualifies for the
+table, and draws the table on a given screen.
+
+### `explosion.py` – `Explosion`
+A procedural particle explosion (no sprite): a bright flash, a shockwave ring and particles that
+fade from white through orange to dark red. Each explosion lasts a fixed number of frames and
+reports when it is `finished`.
 
 ### `player.py` – `Player`
 The 32×32 player spaceship. Stores its position, hitbox, visibility and number of lives (3).
@@ -180,7 +216,8 @@ reaches the top of the screen.
 
 ### `collision.py` – `Collision`
 `check(object_1, object_2, sound=None)` tests whether two visible objects' hitboxes overlap
-(`pygame.Rect.colliderect`). On collision both objects are hidden and an optional sound is played.
+(`pygame.Rect.colliderect`). On collision both objects are hidden, an optional sound is played,
+and `True` is returned (used to award points).
 
 ---
 
@@ -191,13 +228,14 @@ All graphics and audio are located in the `assets/` folder:
 | File | Usage |
 |------|-------|
 | `1.jpg`, `2.jpg`, `3.jpg` | In-game backgrounds (rotated per level) |
-| `menu_bg.png` | Main menu background |
+| `menu_bg.png` | Main menu and high-score screen background |
 | `32x32_spaceship.png` | Player spaceship |
 | `32x32_enemy_1.png` | Enemy spaceship |
 | `16x32_spaceship_shot_2.png` | Player bullet |
 | `sounds/bullet.mp3` | Shooting sound |
-| `sounds/explosion.mp3` | Enemy destroyed sound |
+| `sounds/explosion.mp3` | Explosion sound |
 | `sounds/change.mp3` | Menu navigation sound |
+| `sounds/music.wav` | Looping background music |
 
 The folder also contains additional sprites (other sizes and variants) that are not currently used
 but can be swapped in.
@@ -213,8 +251,12 @@ Some easy tweaks you can make in the code:
 - **Bullet speed** – `bullet_velocity` in `bullet.py`.
 - **Enemy speed** – the `random.randint(3, 5)` range in `Game.init_game()`.
 - **Starting lives** – `self.lives` in `player.py`.
-- **Movement patterns** – add new functions to `enemy_animations.py` and include them in
-  `Game.enemy_movement`.
+- **Points per enemy** – the `10 * self.level` value in `Game.handle()`.
+- **High-score table size** – `MAX_ENTRIES` in `high_scores.py`.
+- **Music volume** – `pygame.mixer.music.set_volume(...)` in `main.py`.
+- **Explosion look** – `size`, `duration` and `colors` in `explosion.py`.
+- **Movement patterns** – add new functions to `enemy_animations.py`, include them in
+  `Game.enemy_movement` and update the `random.randint(0, 1)` range that picks them.
 
 ---
 
@@ -222,7 +264,6 @@ Some easy tweaks you can make in the code:
 
 - The game must be started from the project root, otherwise assets cannot be found.
 - Only one bullet can be on screen at a time.
-- There is no score counter or high-score persistence.
 - At the start of each level all enemies spawn at the same position.
 - The `circle` movement pattern is implemented but not used.
 
@@ -230,9 +271,7 @@ Some easy tweaks you can make in the code:
 
 ## Possible Improvements
 
-- Add a score system and a high-score table
 - Allow multiple bullets / different weapons
 - Add enemy projectiles and boss levels
-- Explosion animations and background music
 - Randomized spawn positions at the start of each level
-- Pause menu
+- Settings menu (volume, controls)
