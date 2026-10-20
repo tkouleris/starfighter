@@ -1,4 +1,5 @@
 import time
+from os import path
 import pygame
 from game import Game
 from high_scores import HighScores
@@ -14,6 +15,10 @@ def main():
     menu = Menu(high_scores)
     pause_menu = PauseMenu()
 
+    pygame.mixer.music.load(path.join('assets', 'sounds', 'music.wav'))
+    pygame.mixer.music.set_volume(0.4)
+    pygame.mixer.music.play(-1)
+
     menu.handle()
 
     name_entry = None
@@ -28,7 +33,10 @@ def main():
                 running = False
             if event.type == pygame.KEYDOWN:
                 if event.key in (pygame.K_ESCAPE, pygame.K_p) and not game.paused:
-                    match pause_menu.handle():
+                    pygame.mixer.music.pause()
+                    choice = pause_menu.handle()
+                    pygame.mixer.music.unpause()
+                    match choice:
                         case PauseMenu.MAIN_MENU:
                             menu.handle()
                             game.player.lives = 3
@@ -63,7 +71,7 @@ def main():
 
         game.handle()
         visible_enemies = [enemy.visible for enemy in game.enemies]
-        if not any(visible_enemies) and game.paused is False:
+        if not any(visible_enemies) and not game.explosions and game.paused is False:
             game.paused = True
             game.level += 1
 
