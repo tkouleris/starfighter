@@ -14,6 +14,8 @@ def main():
     high_scores = HighScores()
     menu = Menu(high_scores)
     pause_menu = PauseMenu()
+    screen = pygame.display.get_surface()
+    font = pygame.font.SysFont('comicsans', 30, True, True)
 
     pygame.mixer.music.load(path.join('assets', 'sounds', 'music.wav'))
     pygame.mixer.music.set_volume(0.4)
@@ -77,8 +79,6 @@ def main():
 
         if game.paused and game.player.lives > 0:
             clock.tick(5)
-            screen = pygame.display.set_mode((640, 480))
-            font = pygame.font.SysFont('comicsans', 30, True, True)
             text = font.render("Lives: " + str(game.player.lives), 1, (255, 0, 0))
             screen.blit(text, (250 - (text.get_width() / 2), 200))
             text = font.render("Level " + str(game.level), 1, (255, 0, 0))
@@ -94,9 +94,7 @@ def main():
                     score_recorded = True
 
             clock.tick(5)
-            screen = pygame.display.set_mode((640, 480))
             screen.fill((0, 0, 0))
-            font = pygame.font.SysFont('comicsans', 30, True, True)
             text = font.render("GAME OVER", 1, (255, 0, 0))
             screen.blit(text, (320 - (text.get_width() / 2), 10))
             text = font.render("Score: " + str(game.score), 1, (255, 0, 0))

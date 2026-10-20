@@ -19,6 +19,8 @@ class Menu:
         ]
         self.select = 0
         self.rect = pygame.Rect(200, 290, 200, 140)
+        self.font = pygame.font.SysFont('comicsans', 30, True, True)
+        self.small_font = pygame.font.SysFont('comicsans', 20, True, True)
 
     def handle(self):
 
@@ -60,10 +62,10 @@ class Menu:
                                 exit()
 
 
-            screen = pygame.display.set_mode((640, 480))
+            screen = pygame.display.get_surface()
             screen.blit(self.bg, (0, 0))
             pygame.draw.rect(screen, (0, 0, 0), self.rect)
-            font = pygame.font.SysFont('comicsans', 30, True, True)
+            font = self.font
             text = font.render("Start ", 1, self.selections[0])
             screen.blit(text, (300 - (text.get_width() / 2), 300))
             text = font.render("High Scores ", 1, self.selections[1])
@@ -84,11 +86,11 @@ class Menu:
                     self.change.play()
                     return
 
-            screen = pygame.display.set_mode((640, 480))
+            screen = pygame.display.get_surface()
             screen.blit(self.bg, (0, 0))
             pygame.draw.rect(screen, (0, 0, 0), pygame.Rect(150, 40, 340, 420))
             self.high_scores.draw(screen, 50)
-            font = pygame.font.SysFont('comicsans', 20, True, True)
+            font = self.small_font
             text = font.render("Press Enter to return", 1, (255, 0, 0))
             screen.blit(text, (320 - (text.get_width() / 2), 420))
 
