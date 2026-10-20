@@ -11,6 +11,7 @@ from player import Player
 class Game:
     def __init__(self, level):
         self.level = level
+        self.score = 0
         self.paused = None
         self.spaceship_x = None
         self.spaceship_y = None
@@ -27,6 +28,7 @@ class Game:
         self.bullet_sound = pygame.mixer.Sound(path.join('assets', 'sounds', 'bullet.mp3'))
         self.explosion = pygame.mixer.Sound(path.join('assets', 'sounds', 'explosion.mp3'))
         self.collision = Collision()
+        self.font = pygame.font.SysFont('comicsans', 20, True, True)
         pygame.display.set_caption("Star Fighter")
         self.bullet = Bullet(self.win)
         self.enemy_movement = [line, zig_zag]
@@ -72,7 +74,8 @@ class Game:
                 if enemy.y >= self.window_height:
                     x = random.randint(32, 448)
                     enemy.set_init(x, 0, self.enemy_movement[random.randint(0, 1)])
-                self.collision.check(enemy, self.bullet, self.explosion)
+                if self.collision.check(enemy, self.bullet, self.explosion):
+                    self.score += 10 * self.level
                 self.collision.check(enemy, self.player)
                 if not self.player.visible:
                     self.player.visible = True
@@ -80,3 +83,6 @@ class Game:
                     self.spaceship_y = self.init_spaceship_y
                     self.paused = True
                     self.player.lives -= 1
+
+            text = self.font.render("Score: " + str(self.score), 1, (255, 255, 255))
+            self.win.blit(text, (10, 10))
