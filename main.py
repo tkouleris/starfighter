@@ -3,6 +3,7 @@ import pygame
 from game import Game
 from high_scores import HighScores
 from menu import Menu
+from pause_menu import PauseMenu
 
 
 def main():
@@ -11,6 +12,7 @@ def main():
     game = Game(1)
     high_scores = HighScores()
     menu = Menu(high_scores)
+    pause_menu = PauseMenu()
 
     menu.handle()
 
@@ -25,7 +27,17 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
+                if event.key in (pygame.K_ESCAPE, pygame.K_p) and not game.paused:
+                    match pause_menu.handle():
+                        case PauseMenu.MAIN_MENU:
+                            menu.handle()
+                            game.player.lives = 3
+                            game.level = 1
+                            game.score = 0
+                            game.init_game()
+                        case PauseMenu.QUIT:
+                            running = False
+                elif event.key == pygame.K_ESCAPE:
                     running = False
                 elif name_entry is not None:
                     if event.key == pygame.K_BACKSPACE:
