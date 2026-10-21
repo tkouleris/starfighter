@@ -15,6 +15,10 @@ class Game:
     POWER_UP_CHANCE = 0.15
     # How long a power-up weapon lasts, in frames
     POWER_UP_DURATION = 600
+    # Ship movement: top speed in pixels per frame, and how quickly velocity eases towards
+    # the held direction (higher = snappier, 1 = instant start/stop)
+    SHIP_SPEED = 4.5
+    SHIP_RESPONSIVENESS = 0.25
 
     def __init__(self, level, settings):
         self.level = level
@@ -23,6 +27,8 @@ class Game:
         self.paused = None
         self.spaceship_x = None
         self.spaceship_y = None
+        self.velocity_x = 0
+        self.velocity_y = 0
         self.init_spaceship_y = None
         self.init_spaceship_x = None
         self.enemies = []
@@ -65,8 +71,35 @@ class Game:
         self.init_spaceship_y = self.window_height - 32 - 5
         self.spaceship_x = (self.window_width // 2) - (32 // 2)
         self.spaceship_y = self.window_height - 32 - 5
+        self.velocity_x = 0
+        self.velocity_y = 0
 
         self.paused = False
+
+    def move_spaceship(self, direction_x, direction_y):
+        target_x = direction_x * self.SHIP_SPEED
+        target_y = direction_y * self.SHIP_SPEED
+        # Diagonals would otherwise be ~1.41x faster than straight movement
+        if direction_x and direction_y:
+            target_x *= 0.7071
+            target_y *= 0.7071
+        self.velocity_x += (target_x - self.velocity_x) * self.SHIP_RESPONSIVENESS
+        self.velocity_y += (target_y - self.velocity_y) * self.SHIP_RESPONSIVENESS
+        # Drop the tail of the ease-out so the ship actually comes to rest
+        if abs(self.velocity_x) < 0.05:
+            self.velocity_x = 0
+        if abs(self.velocity_y) < 0.05:
+            self.velocity_y = 0
+
+        self.spaceship_x += self.velocity_x
+        self.spaceship_y += self.velocity_y
+        # Keep the 32x32 ship fully on screen, stopping dead against the edges
+        if not 0 <= self.spaceship_x <= self.window_width - 32:
+            self.spaceship_x = max(0, min(self.window_width - 32, self.spaceship_x))
+            self.velocity_x = 0
+        if not 0 <= self.spaceship_y <= self.window_height - 32:
+            self.spaceship_y = max(0, min(self.window_height - 32, self.spaceship_y))
+            self.velocity_y = 0
 
     def handle(self):
         if not self.paused:
@@ -81,14 +114,8 @@ class Game:
             if self.player.visible:
                 keys = pygame.key.get_pressed()
                 controls = self.settings.controls
-                if keys[controls['right']] and self.spaceship_x < (self.window_width - 32):
-                    self.spaceship_x += 2
-                if keys[controls['left']] and self.spaceship_x > 0:
-                    self.spaceship_x -= 2
-                if keys[controls['up']]:
-                    self.spaceship_y -= 2
-                if keys[controls['down']] and (self.spaceship_y + 32) < self.window_height:
-                    self.spaceship_y += 2
+                self.move_spaceship(keys[controls['right']] - keys[controls['left']],
+                                    keys[controls['down']] - keys[controls['up']])
                 if keys[controls['fire']] and self.fire_cooldown == 0:
                     self.bullet_sound.play()
                     self.fire_cooldown = self.weapon.cooldown
@@ -138,6 +165,8 @@ class Game:
                 self.player.visible = True
                 self.spaceship_x = self.init_spaceship_x
                 self.spaceship_y = self.init_spaceship_y
+                self.velocity_x = 0
+                self.velocity_y = 0
                 self.paused = True
                 self.player.lives -= 1
                 self.weapon = BLASTER
