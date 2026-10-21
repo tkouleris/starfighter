@@ -147,97 +147,119 @@ class Game:
         self.power_ups.append(PowerUp(self.win, random.choice(POWER_UPS), center, self.font))
 
     def handle(self):
-        if not self.paused:
-            if self.fire_cooldown > 0:
-                self.fire_cooldown -= 1
-            if self.weapon_timer > 0:
-                self.weapon_timer -= 1
-                if self.weapon_timer == 0:
-                    self.weapon = BLASTER
+        if self.paused:
+            return
+        self.tick_timers()
+        # Controls are dead while the player's ship is exploding
+        if self.player.visible:
+            self.handle_input()
 
-            # Controls are dead while the player's ship is exploding
-            if self.player.visible:
-                keys = pygame.key.get_pressed()
-                controls = self.settings.controls
-                self.move_spaceship(keys[controls['right']] - keys[controls['left']],
-                                    keys[controls['down']] - keys[controls['up']])
-                if keys[controls['fire']] and self.fire_cooldown == 0:
-                    self.bullet_sound.play()
-                    self.fire_cooldown = self.weapon.cooldown
-                    for offset, dx in self.weapon.shots:
-                        # Bullets are 16 wide, so +8 centres them on the 32-wide ship
-                        self.bullets.append(Bullet(self.win, self.bullet_image, self.spaceship_x + 8 + offset,
-                                                   self.spaceship_y - 35, dx))
+        self.win.blit(self.bg[self.level % 3], (self.bg_x, self.bg_y))
+        for bullet in self.bullets:
+            bullet.draw()
+        if self.player.visible:
+            self.player.draw(self.spaceship_x, self.spaceship_y)
+        self.handle_enemies()
+        if self.boss:
+            self.handle_boss()
+        self.bullets = [bullet for bullet in self.bullets if bullet.visible]
+        self.handle_enemy_bullets()
+        self.handle_power_ups()
 
-            self.win.blit(self.bg[self.level % 3], (self.bg_x, self.bg_y))
+        for explosion in self.explosions:
+            explosion.draw()
+        self.explosions = [explosion for explosion in self.explosions if not explosion.finished]
 
-            for bullet in self.bullets:
-                bullet.draw()
-            if self.player.visible:
-                self.player.draw(self.spaceship_x, self.spaceship_y)
-            for enemy in self.enemies:
-                enemy.draw()
-                if enemy.y >= self.window_height:
-                    x = random.randint(0, self.window_width - 32)
-                    enemy.set_init(x, -32, random.choice(self.enemy_movement))
-                for bullet in self.bullets:
-                    if self.collision.check(enemy, bullet, self.explosion):
-                        self.score += 10 * self.level
-                        self.explosions.append(Explosion(self.win, enemy.hitbox.center))
-                        if random.random() < self.POWER_UP_CHANCE:
-                            self.drop_power_up(enemy.hitbox.center)
-                if self.collision.check(enemy, self.player, self.explosion):
-                    self.explosions.append(Explosion(self.win, self.player.hitbox.center, 1.6, 50))
-                if self.player.visible and enemy.ready_to_fire():
-                    self.enemy_bullets.append(aimed(self.win, enemy.hitbox.midbottom, self.player.hitbox.center,
-                                                    self.ENEMY_BULLET_SPEED))
+        # A hit player stays invisible until its explosion has played out, then the round ends
+        if not self.player.visible and not self.explosions:
+            self.lose_life()
 
-            if self.boss:
-                self.handle_boss()
+        self.draw_hud()
 
-            self.bullets = [bullet for bullet in self.bullets if bullet.visible]
-
-            # Cancel any shots still in flight once the level is cleared, so the player can't die after winning
-            if self.level_cleared():
-                self.enemy_bullets = []
-            for enemy_bullet in self.enemy_bullets:
-                enemy_bullet.draw()
-                if self.collision.check(enemy_bullet, self.player, self.explosion):
-                    self.explosions.append(Explosion(self.win, self.player.hitbox.center, 1.6, 50))
-            self.enemy_bullets = [enemy_bullet for enemy_bullet in self.enemy_bullets if enemy_bullet.visible]
-
-            for power_up in self.power_ups:
-                power_up.draw()
-                # Not Collision.check: catching a power-up must not hide the player
-                if self.player.visible and power_up.visible and power_up.hitbox.colliderect(self.player.hitbox):
-                    power_up.visible = False
-                    self.weapon = power_up.weapon
-                    self.weapon_timer = self.POWER_UP_DURATION
-            self.power_ups = [power_up for power_up in self.power_ups if power_up.visible]
-
-            for explosion in self.explosions:
-                explosion.draw()
-            self.explosions = [explosion for explosion in self.explosions if not explosion.finished]
-
-            # A hit player stays invisible until its explosion has played out, then the round ends
-            if not self.player.visible and not self.explosions:
-                self.player.visible = True
-                self.spaceship_x = self.init_spaceship_x
-                self.spaceship_y = self.init_spaceship_y
-                self.velocity_x = 0
-                self.velocity_y = 0
-                self.paused = True
-                self.player.lives -= 1
+    def tick_timers(self):
+        if self.fire_cooldown > 0:
+            self.fire_cooldown -= 1
+        if self.weapon_timer > 0:
+            self.weapon_timer -= 1
+            if self.weapon_timer == 0:
                 self.weapon = BLASTER
-                self.weapon_timer = 0
 
-            text = self.font.render("Score: " + str(self.score), 1, (255, 255, 255))
-            self.win.blit(text, (10, 10))
-            if self.boss:
-                self.boss.draw_health_bar()
-            if self.weapon_timer > 0:
-                text = self.font.render(f"{self.weapon.name}: {self.weapon_timer // 60 + 1}s", 1, self.weapon.color)
-                self.win.blit(text, (10, 35))
+    def handle_input(self):
+        keys = pygame.key.get_pressed()
+        controls = self.settings.controls
+        self.move_spaceship(keys[controls['right']] - keys[controls['left']],
+                            keys[controls['down']] - keys[controls['up']])
+        if keys[controls['fire']] and self.fire_cooldown == 0:
+            self.bullet_sound.play()
+            self.fire_cooldown = self.weapon.cooldown
+            for offset, dx in self.weapon.shots:
+                # Bullets are 16 wide, so +8 centres them on the 32-wide ship
+                self.bullets.append(Bullet(self.win, self.bullet_image, self.spaceship_x + 8 + offset,
+                                           self.spaceship_y - 35, dx))
+
+    def handle_enemies(self):
+        for enemy in self.enemies:
+            enemy.draw()
+            if enemy.y >= self.window_height:
+                x = random.randint(0, self.window_width - 32)
+                enemy.set_init(x, -32, random.choice(self.enemy_movement))
+            for bullet in self.bullets:
+                if self.collision.check(enemy, bullet, self.explosion):
+                    self.score += 10 * self.level
+                    self.explosions.append(Explosion(self.win, enemy.hitbox.center))
+                    if random.random() < self.POWER_UP_CHANCE:
+                        self.drop_power_up(enemy.hitbox.center)
+            if self.collision.check(enemy, self.player):
+                self.destroy_player()
+            if self.player.visible and enemy.ready_to_fire():
+                self.enemy_bullets.append(aimed(self.win, enemy.hitbox.midbottom, self.player.hitbox.center,
+                                                self.ENEMY_BULLET_SPEED))
+
+    def handle_enemy_bullets(self):
+        # Cancel any shots still in flight once the level is cleared, so the player can't die after winning
+        if self.level_cleared():
+            self.enemy_bullets = []
+        for enemy_bullet in self.enemy_bullets:
+            enemy_bullet.draw()
+            if self.collision.check(enemy_bullet, self.player):
+                self.destroy_player()
+        self.enemy_bullets = [enemy_bullet for enemy_bullet in self.enemy_bullets if enemy_bullet.visible]
+
+    def handle_power_ups(self):
+        for power_up in self.power_ups:
+            power_up.draw()
+            # Not Collision.check: catching a power-up must not hide the player
+            if self.player.visible and power_up.visible and power_up.hitbox.colliderect(self.player.hitbox):
+                power_up.visible = False
+                self.weapon = power_up.weapon
+                self.weapon_timer = self.POWER_UP_DURATION
+        self.power_ups = [power_up for power_up in self.power_ups if power_up.visible]
+
+    def destroy_player(self):
+        # The ship stays hidden until this explosion finishes, then handle() takes a life
+        self.player.visible = False
+        self.explosion.play()
+        self.explosions.append(Explosion(self.win, self.player.hitbox.center, 1.6, 50))
+
+    def lose_life(self):
+        self.player.visible = True
+        self.spaceship_x = self.init_spaceship_x
+        self.spaceship_y = self.init_spaceship_y
+        self.velocity_x = 0
+        self.velocity_y = 0
+        self.paused = True
+        self.player.lives -= 1
+        self.weapon = BLASTER
+        self.weapon_timer = 0
+
+    def draw_hud(self):
+        text = self.font.render("Score: " + str(self.score), 1, (255, 255, 255))
+        self.win.blit(text, (10, 10))
+        if self.boss:
+            self.boss.draw_health_bar()
+        if self.weapon_timer > 0:
+            text = self.font.render(f"{self.weapon.name}: {self.weapon_timer // 60 + 1}s", 1, self.weapon.color)
+            self.win.blit(text, (10, 35))
 
     def handle_boss(self):
         boss = self.boss
@@ -252,8 +274,6 @@ class Game:
                     self.explosions.append(Explosion(self.win, boss.hitbox.center, 3, 90))
                     self.drop_power_up(boss.hitbox.center)
         if boss.visible and self.player.visible and boss.hitbox.colliderect(self.player.hitbox):
-            self.explosion.play()
-            self.player.visible = False
-            self.explosions.append(Explosion(self.win, self.player.hitbox.center, 1.6, 50))
+            self.destroy_player()
         if boss.visible and self.player.visible:
             self.enemy_bullets.extend(boss.fire(self.player.hitbox.center))
