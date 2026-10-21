@@ -24,6 +24,8 @@ class Game:
     # Every Nth level is a boss fight instead of a wave of enemies
     BOSS_LEVEL_INTERVAL = 5
     ENEMY_BULLET_SPEED = 3
+    # Vertical gap between enemies flying in at the start of a level, picked at random per enemy
+    SPAWN_GAP = (40, 100)
 
     def __init__(self, level, settings):
         self.level = level
@@ -81,11 +83,14 @@ class Game:
         if self.is_boss_level():
             self.boss = Boss(self.win, self.level // self.BOSS_LEVEL_INTERVAL)
         else:
-            for index in range(self.level):
-                # Spread enemies across the width and stagger them above the screen so they fly in one by one
+            # Spread enemies across the width and stagger them above the screen so they fly in one by one
+            x = None
+            y = -32
+            for _ in range(self.level):
+                x = self.random_spawn_x(x)
                 self.enemies.append(
-                    Enemy(self.win, random.randint(0, self.window_width - 32), -32 - index * 60,
-                          random.choice(self.enemy_movement), random.randint(3, 5)))
+                    Enemy(self.win, x, y, random.choice(self.enemy_movement), random.randint(3, 5)))
+                y -= random.randint(*self.SPAWN_GAP)
 
         self.init_spaceship_x = (self.window_width // 2) - (32 // 2)
         self.init_spaceship_y = self.window_height - 32 - 5
@@ -120,6 +125,13 @@ class Game:
         if not 0 <= self.spaceship_y <= self.window_height - 32:
             self.spaceship_y = max(0, min(self.window_height - 32, self.spaceship_y))
             self.velocity_y = 0
+
+    def random_spawn_x(self, previous_x=None):
+        # Keep consecutive enemies at least two ship widths apart so they don't arrive stacked
+        while True:
+            x = random.randint(0, self.window_width - 32)
+            if previous_x is None or abs(x - previous_x) >= 64:
+                return x
 
     def drop_power_up(self, center):
         self.power_ups.append(PowerUp(self.win, random.choice(POWER_UPS), center, self.font))

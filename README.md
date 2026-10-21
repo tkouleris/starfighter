@@ -22,7 +22,6 @@ Each new level adds one more enemy to the screen, so the game gets progressively
 - [Assets](#assets)
 - [Customization](#customization)
 - [Known Limitations](#known-limitations)
-- [Possible Improvements](#possible-improvements)
 
 ---
 
@@ -210,7 +209,8 @@ weapon, explosions,
 backgrounds and sounds. It is the only place that creates the game window (`pygame.display.set_mode`);
 every other screen draws onto the existing window.
 
-- `init_game()` – creates `level` enemies with a random movement pattern and speed (3–5), or a
+- `init_game()` – creates `level` enemies with a random movement pattern and speed (3–5) at random
+  spawn positions (`SPAWN_GAP`, `random_spawn_x()`), or a
   `Boss` on every `BOSS_LEVEL_INTERVAL`th level, clears explosions and bullets, resets the player
   position and un-pauses the game.
 - `is_boss_level()` / `level_cleared()` – used by `main.py` for the "BOSS INCOMING!" banner and to
@@ -279,7 +279,9 @@ Movement functions that operate on an enemy object:
 - `zig_zag` – moves down while swinging left and right in legs of random length, bouncing off the window edges.
 - `circle` – orbits a centre point that slowly sinks down the screen, clockwise or anticlockwise.
 
-Enemies spawn at random horizontal positions, staggered above the screen, and fly in one by one.
+Enemies spawn at random horizontal positions, at least two ship widths from the previous enemy, and
+are staggered above the screen by a random gap so they fly in one by one at irregular intervals.
+The boss starts at a random horizontal position and direction.
 
 ### `bullet.py` – `Bullet`
 A single player projectile; `Game` creates a new one per shot. It travels upward at 5 pixels per
@@ -351,9 +353,3 @@ Some easy tweaks you can make in the code:
 
 - The game must be started from the project root, otherwise assets cannot be found.
 - The `circle` movement pattern is implemented but not used.
-
----
-
-## Possible Improvements
-
-- Randomized spawn positions at the start of each level

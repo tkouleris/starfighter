@@ -1,4 +1,5 @@
 import math
+import random
 from os import path
 import pygame
 from enemy_bullet import EnemyBullet, aimed
@@ -24,9 +25,9 @@ class Boss:
         self.health = self.max_health
         self.speed = 1.5 + 0.25 * number
         self.bullet_speed = 3 + 0.25 * number
-        self.x = (window.get_width() - self.WIDTH) / 2
+        self.x = random.uniform(0, window.get_width() - self.WIDTH)
         self.y = -self.HEIGHT
-        self.direction = 1
+        self.direction = random.choice((-1, 1))
         self.flash = 0
         self.attack_index = 0
         self.fire_timer = 60
