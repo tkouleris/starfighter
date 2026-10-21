@@ -16,6 +16,7 @@ Each new level adds one more enemy to the screen, so the game gets progressively
   - [Controls](#controls)
   - [Rules](#rules)
   - [Scoring and High Scores](#scoring-and-high-scores)
+  - [Settings](#settings)
 - [Project Structure](#project-structure)
 - [Code Overview](#code-overview)
 - [Assets](#assets)
@@ -27,14 +28,15 @@ Each new level adds one more enemy to the screen, so the game gets progressively
 
 ## Features
 
-- Main menu with **Start** / **High Scores** / **Quit** options and sound feedback
+- Main menu with **Start** / **High Scores** / **Settings** / **Quit** options and sound feedback
 - Player spaceship with free movement in four directions
 - Shooting with sound effects
 - Enemies with different movement patterns (straight line and zig-zag) and random speeds
 - Increasing difficulty: level *N* spawns *N* enemies
 - Lives system (3 lives) with a "Game Over / Play again" screen
 - Score counter and a persistent **top 10 high-score table** with initials entry
-- **Pause menu** (Resume / Main Menu / Quit) during play
+- **Pause menu** (Resume / Settings / Main Menu / Quit) during play
+- **Settings menu** with music and sound-effect volume and rebindable movement/fire keys, saved between sessions
 - Procedural **explosion animations** for destroyed enemies and the player's ship
 - Looping chiptune **background music**
 - Rotating backgrounds that change from level to level
@@ -103,8 +105,11 @@ python main.py
 | `↑` / `↓` | Main menu / pause menu | Move between options |
 | `Enter` | Main menu / pause menu | Confirm selection |
 | `Enter` / `Esc` | High Scores screen | Return to the main menu |
-| `←` `→` `↑` `↓` | In game | Move the spaceship |
-| `Space` | In game | Fire |
+| `←` / `→` | Settings menu (volume rows) | Lower / raise the volume |
+| `Enter`, then any key | Settings menu (control rows) | Rebind that control (`Esc` cancels; `P` is reserved) |
+| `Esc` | Settings menu | Return to the previous menu |
+| `←` `→` `↑` `↓` | In game | Move the spaceship (rebindable) |
+| `Space` | In game | Fire (rebindable) |
 | `Esc` / `P` | In game | Open the pause menu (press again to resume) |
 | `Space` | Level / lives screen | Continue to the next round |
 | `A`–`Z`, `Backspace`, `Enter` | Game Over screen | Type your initials for a new high score and confirm |
@@ -132,6 +137,14 @@ python main.py
 - High scores are saved in `highscores.json` in the project root (ignored by git) and can be viewed
   from the main menu or on the Game Over screen.
 
+### Settings
+
+- Open **Settings** from the main menu or the pause menu.
+- Music and sound-effect volume each range from 0 to 10.
+- Each of the five gameplay controls can be bound to any key except `Esc` and `P`. Binding a key that
+  another control already uses swaps the two.
+- Settings are saved to `settings.json` in the project root (ignored by git) as soon as they change.
+
 ---
 
 ## Project Structure
@@ -139,8 +152,10 @@ python main.py
 ```
 starfighter/
 ├── main.py               # Entry point – initializes Pygame, runs the menu and the main game loop
-├── menu.py               # Main menu (Start / High Scores / Quit)
-├── pause_menu.py         # In-game pause menu (Resume / Main Menu / Quit)
+├── menu.py               # Main menu (Start / High Scores / Settings / Quit)
+├── pause_menu.py         # In-game pause menu (Resume / Settings / Main Menu / Quit)
+├── settings.py           # Volume and key bindings, stored in settings.json
+├── settings_menu.py      # Settings screen (volume sliders, key rebinding)
 ├── game.py               # Game state, level setup, input handling, scoring and rendering
 ├── player.py             # Player spaceship
 ├── enemy.py              # Enemy spaceship
@@ -177,14 +192,26 @@ every other screen draws onto the existing window.
   explosion to finish before taking a life and pausing.
 
 ### `menu.py` – `Menu`
-A blocking loop that renders the menu background with the **Start**, **High Scores** and **Quit**
-options. The selected option is highlighted in green. Selecting **Start** returns control to
-`main.py`, **High Scores** shows the high-score table, and **Quit** exits the program.
+A blocking loop that renders the menu background with the **Start**, **High Scores**, **Settings**
+and **Quit** options. The selected option is highlighted in green. Selecting **Start** returns control
+to `main.py`, **High Scores** shows the high-score table, **Settings** opens the `SettingsMenu`, and
+**Quit** exits the program.
 
 ### `pause_menu.py` – `PauseMenu`
 A blocking loop that draws a dimmed snapshot of the last game frame with the **Resume**,
-**Main Menu** and **Quit** options, and returns the chosen action to `main.py`.
+**Settings**, **Main Menu** and **Quit** options. **Settings** opens the `SettingsMenu` and comes back
+to the pause menu; the other options are returned to `main.py`.
 The background music is paused while it is open.
+
+### `settings.py` – `Settings`
+Holds the music and sound-effect volume (0–10) and the key bound to each gameplay action, and
+loads/saves them in `settings.json`. Every sound effect is registered with `register_sound()` so
+volume changes apply to it immediately. `Game.handle()` reads the bound keys from `controls`.
+
+### `settings_menu.py` – `SettingsMenu`
+A blocking loop, shared by the main menu and the pause menu, that draws volume bars and the
+current key bindings over a dimmed snapshot of the screen. It adjusts volumes with `←`/`→` and
+rebinds a control by waiting for the next key press.
 
 ### `high_scores.py` – `HighScores`
 Loads and saves the top 10 scores in `highscores.json`, checks whether a score qualifies for the
@@ -253,7 +280,8 @@ Some easy tweaks you can make in the code:
 - **Starting lives** – `self.lives` in `player.py`.
 - **Points per enemy** – the `10 * self.level` value in `Game.handle()`.
 - **High-score table size** – `MAX_ENTRIES` in `high_scores.py`.
-- **Music volume** – `pygame.mixer.music.set_volume(...)` in `main.py`.
+- **Default volumes and controls** – `music_volume`, `sfx_volume` and `DEFAULT_CONTROLS` in `settings.py`
+  (delete `settings.json` to return to them).
 - **Explosion look** – `size`, `duration` and `colors` in `explosion.py`.
 - **Movement patterns** – add new functions to `enemy_animations.py`, include them in
   `Game.enemy_movement` and update the `random.randint(0, 1)` range that picks them.
@@ -274,4 +302,3 @@ Some easy tweaks you can make in the code:
 - Allow multiple bullets / different weapons
 - Add enemy projectiles and boss levels
 - Randomized spawn positions at the start of each level
-- Settings menu (volume, controls)

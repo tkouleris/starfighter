@@ -10,8 +10,9 @@ from player import Player
 
 
 class Game:
-    def __init__(self, level):
+    def __init__(self, level, settings):
         self.level = level
+        self.settings = settings
         self.score = 0
         self.paused = None
         self.spaceship_x = None
@@ -29,6 +30,8 @@ class Game:
         self.bg_y = 0
         self.bullet_sound = pygame.mixer.Sound(path.join('assets', 'sounds', 'bullet.mp3'))
         self.explosion = pygame.mixer.Sound(path.join('assets', 'sounds', 'explosion.mp3'))
+        settings.register_sound(self.bullet_sound)
+        settings.register_sound(self.explosion)
         self.collision = Collision()
         self.font = pygame.font.SysFont('comicsans', 20, True, True)
         pygame.display.set_caption("Star Fighter")
@@ -56,15 +59,16 @@ class Game:
             # Controls are dead while the player's ship is exploding
             if self.player.visible:
                 keys = pygame.key.get_pressed()
-                if keys[pygame.K_RIGHT] and self.spaceship_x < (self.window_width - 32):
+                controls = self.settings.controls
+                if keys[controls['right']] and self.spaceship_x < (self.window_width - 32):
                     self.spaceship_x += 2
-                if keys[pygame.K_LEFT] and self.spaceship_x > 0:
+                if keys[controls['left']] and self.spaceship_x > 0:
                     self.spaceship_x -= 2
-                if keys[pygame.K_UP]:
+                if keys[controls['up']]:
                     self.spaceship_y -= 2
-                if keys[pygame.K_DOWN] and (self.spaceship_y + 32) < self.window_height:
+                if keys[controls['down']] and (self.spaceship_y + 32) < self.window_height:
                     self.spaceship_y += 2
-                if keys[pygame.K_SPACE] and not self.bullet.visible:
+                if keys[controls['fire']] and not self.bullet.visible:
                     self.bullet_sound.play()
                     self.bullet.visible = True
                     self.bullet.x = self.spaceship_x

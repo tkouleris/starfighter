@@ -5,20 +5,23 @@ import pygame
 
 class Menu:
 
-    def __init__(self, high_scores):
+    def __init__(self, high_scores, settings_menu):
         self.high_scores = high_scores
+        self.settings_menu = settings_menu
         self.bg = pygame.image.load(path.join('assets', 'menu_bg.png'))
         self.change = pygame.mixer.Sound(path.join('assets', 'sounds', 'change.mp3'))
+        settings_menu.settings.register_sound(self.change)
         self.clock = pygame.time.Clock()
         self.running = True
         self.output = 0
         self.selections = [
             (0, 255, 0),
             (255, 0, 0),
+            (255, 0, 0),
             (255, 0, 0)
         ]
         self.select = 0
-        self.rect = pygame.Rect(200, 290, 200, 140)
+        self.rect = pygame.Rect(200, 270, 200, 185)
         self.font = pygame.font.SysFont('comicsans', 30, True, True)
         self.small_font = pygame.font.SysFont('comicsans', 20, True, True)
 
@@ -58,6 +61,8 @@ class Menu:
                             case 1:
                                 self.show_high_scores()
                             case 2:
+                                self.settings_menu.handle()
+                            case 3:
                                 pygame.quit()
                                 exit()
 
@@ -67,11 +72,13 @@ class Menu:
             pygame.draw.rect(screen, (0, 0, 0), self.rect)
             font = self.font
             text = font.render("Start ", 1, self.selections[0])
-            screen.blit(text, (300 - (text.get_width() / 2), 300))
+            screen.blit(text, (300 - (text.get_width() / 2), 280))
             text = font.render("High Scores ", 1, self.selections[1])
-            screen.blit(text, (300 - (text.get_width() / 2), 345))
-            text = font.render("Quit ", 1, self.selections[2])
-            screen.blit(text, (300 - (text.get_width() / 2), 390))
+            screen.blit(text, (300 - (text.get_width() / 2), 322))
+            text = font.render("Settings ", 1, self.selections[2])
+            screen.blit(text, (300 - (text.get_width() / 2), 364))
+            text = font.render("Quit ", 1, self.selections[3])
+            screen.blit(text, (300 - (text.get_width() / 2), 406))
 
             pygame.display.update()
 

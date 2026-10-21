@@ -163,3 +163,4 @@ cython_debug/
 #.idea/
 # Star Fighter high scores
 highscores.json
+settings.json

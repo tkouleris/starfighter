@@ -5,20 +5,24 @@ from game import Game
 from high_scores import HighScores
 from menu import Menu
 from pause_menu import PauseMenu
+from settings import Settings
+from settings_menu import SettingsMenu
 
 
 def main():
     pygame.init()
     clock = pygame.time.Clock()
-    game = Game(1)
+    settings = Settings()
+    game = Game(1, settings)
     high_scores = HighScores()
-    menu = Menu(high_scores)
-    pause_menu = PauseMenu()
+    settings_menu = SettingsMenu(settings)
+    menu = Menu(high_scores, settings_menu)
+    pause_menu = PauseMenu(settings_menu)
     screen = pygame.display.get_surface()
     font = pygame.font.SysFont('comicsans', 30, True, True)
 
     pygame.mixer.music.load(path.join('assets', 'sounds', 'music.wav'))
-    pygame.mixer.music.set_volume(0.4)
+    settings.apply()
     pygame.mixer.music.play(-1)
 
     menu.handle()
