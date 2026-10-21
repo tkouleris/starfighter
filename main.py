@@ -76,8 +76,7 @@ def main():
                     running = False
 
         game.handle()
-        visible_enemies = [enemy.visible for enemy in game.enemies]
-        if not any(visible_enemies) and not game.explosions and game.paused is False:
+        if game.level_cleared() and not game.explosions and game.paused is False:
             game.paused = True
             game.level += 1
 
@@ -89,6 +88,9 @@ def main():
             screen.blit(text, (250 - (text.get_width() / 2), 250))
             text = font.render("Score: " + str(game.score), 1, (255, 0, 0))
             screen.blit(text, (250 - (text.get_width() / 2), 300))
+            if game.is_boss_level():
+                text = font.render("BOSS INCOMING!", 1, (255, 200, 0))
+                screen.blit(text, (250 - (text.get_width() / 2), 150))
 
         if game.paused and game.player.lives <= 0:
             if not score_recorded and name_entry is None:

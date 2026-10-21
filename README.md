@@ -33,7 +33,9 @@ Each new level adds one more enemy to the screen, so the game gets progressively
 - Auto-fire with multiple bullets on screen and sound effects
 - **Weapon power-ups** (Double, Spread, Rapid) dropped by destroyed enemies
 - Enemies with different movement patterns (straight line and zig-zag) and random speeds
+- Enemies shoot aimed projectiles at the player
 - Increasing difficulty: level *N* spawns *N* enemies
+- **Boss fight every 5th level**: a large ship with a health bar and alternating attack patterns
 - Lives system (3 lives) with a "Game Over / Play again" screen
 - Score counter and a persistent **top 10 high-score table** with initials entry
 - **Pause menu** (Resume / Settings / Main Menu / Quit) during play
@@ -137,12 +139,20 @@ python main.py
   | **R** (purple) | Rapid | Single shot, about three times the fire rate |
 
 - Losing a life resets your weapon to the Blaster.
-- If an enemy collides with your ship it explodes, you **lose a life** and the current level restarts.
+- Enemies in the top half of the screen periodically fire a shot aimed at your ship.
+- Every **5th level** is a **boss fight** instead of a wave: a single large ship that flies in, sweeps
+  side to side and alternates between an aimed fan of shots and a ring of bullets. Its health bar is
+  shown at the top of the screen; below half health it moves and fires faster. Each boss is tougher
+  than the last.
+- When a level is cleared, enemy shots still in flight disappear.
+- If an enemy or an enemy shot hits your ship it explodes, you **lose a life** and the current level
+  restarts (a boss comes back at full health).
 - When all your lives are gone the **Game Over** screen appears and you can choose to play again.
 
 ### Scoring and High Scores
 
-- Each enemy destroyed is worth **10 × the current level** points.
+- Each enemy destroyed is worth **10 × the current level** points; a boss is worth **100 × the current
+  level** and always drops a power-up.
 - The current score is shown in the top-left corner during play and on the in-between screens.
 - If your final score makes the **top 10**, the Game Over screen asks for your initials (up to 3 letters).
 - High scores are saved in `highscores.json` in the project root (ignored by git) and can be viewed
@@ -171,7 +181,9 @@ starfighter/
 ├── player.py             # Player spaceship
 ├── enemy.py              # Enemy spaceship
 ├── enemy_animations.py   # Enemy movement patterns (line, zig_zag, circle)
+├── boss.py               # Boss ship (every 5th level)
 ├── bullet.py             # Player bullet
+├── enemy_bullet.py       # Enemy projectile
 ├── weapons.py            # Weapon definitions (Blaster, Double, Spread, Rapid)
 ├── power_up.py           # Falling weapon power-up
 ├── collision.py          # Hitbox-based collision detection
@@ -198,11 +210,15 @@ weapon, explosions,
 backgrounds and sounds. It is the only place that creates the game window (`pygame.display.set_mode`);
 every other screen draws onto the existing window.
 
-- `init_game()` – creates `level` enemies with a random movement pattern and speed (3–5),
-  clears explosions, resets the player position and un-pauses the game.
+- `init_game()` – creates `level` enemies with a random movement pattern and speed (3–5), or a
+  `Boss` on every `BOSS_LEVEL_INTERVAL`th level, clears explosions and bullets, resets the player
+  position and un-pauses the game.
+- `is_boss_level()` / `level_cleared()` – used by `main.py` for the "BOSS INCOMING!" banner and to
+  detect when to advance to the next level.
 - `handle()` – processes keyboard input for movement and shooting, draws the background,
   bullets, player, enemies, power-ups, explosions, score and active weapon, respawns enemies that leave the screen and checks
-  collisions (bullet ↔ enemy, enemy ↔ player and power-up ↔ player). After the player is hit, it waits for the
+  collisions (bullet ↔ enemy, bullet ↔ boss, enemy/boss ↔ player, enemy shot ↔ player and
+  power-up ↔ player). It also spawns enemy and boss shots. After the player is hit, it waits for the
   explosion to finish before taking a life and pausing.
 
 ### `menu.py` – `Menu`
@@ -243,6 +259,18 @@ The 32×32 player spaceship. Stores its position, hitbox, visibility and number 
 A 32×32 enemy ship. Each enemy receives a movement function (animation) and a velocity.
 `draw()` moves the enemy using its animation, updates its hitbox and renders it.
 `set_init()` repositions the enemy, assigns a new movement pattern and resets its pattern state.
+`ready_to_fire()` counts down a random fire interval while the enemy is in the top half of the screen.
+
+### `boss.py` – `Boss`
+A 96×68 boss ship with health that scales with the boss number. It flies in from above, then sweeps
+left and right. `fire()` returns its shots, alternating between an aimed fan and a ring; below half
+health (`enraged`) it moves and fires faster with more bullets. `hit()` takes one point of health and
+flashes the sprite, and `draw_health_bar()` draws the bar at the top of the screen.
+
+### `enemy_bullet.py` – `EnemyBullet`
+A procedurally drawn enemy shot that travels with a fixed velocity and becomes invisible when it
+leaves the screen. Its hitbox is smaller than the drawn shot. `aimed()` creates a shot heading towards
+a target point, optionally rotated by an angle.
 
 ### `enemy_animations.py`
 Movement functions that operate on an enemy object:
@@ -284,6 +312,7 @@ All graphics and audio are located in the `assets/` folder:
 | `menu_bg.png` | Main menu and high-score screen background |
 | `32x32_spaceship.png` | Player spaceship |
 | `32x32_enemy_1.png` | Enemy spaceship |
+| `enemy_1.png` | Boss (scaled to 96×68) |
 | `16x32_spaceship_shot_2.png` | Player bullet |
 | `sounds/bullet.mp3` | Shooting sound |
 | `sounds/explosion.mp3` | Explosion sound |
@@ -305,6 +334,8 @@ Some easy tweaks you can make in the code:
 - **Weapons** – `cooldown` and `shots` in `weapons.py`; add a new `Weapon` to `POWER_UPS` to make it droppable.
 - **Power-up drop rate and duration** – `POWER_UP_CHANCE` and `POWER_UP_DURATION` in `game.py`.
 - **Enemy speed** – the `random.randint(3, 5)` range in `Game.init_game()`.
+- **Enemy fire rate and shot speed** – `FIRE_INTERVAL` in `enemy.py` and `ENEMY_BULLET_SPEED` in `game.py`.
+- **Boss frequency and strength** – `BOSS_LEVEL_INTERVAL` in `game.py`; health, speed and fire timing in `boss.py`.
 - **Starting lives** – `self.lives` in `player.py`.
 - **Points per enemy** – the `10 * self.level` value in `Game.handle()`.
 - **High-score table size** – `MAX_ENTRIES` in `high_scores.py`.
@@ -325,5 +356,4 @@ Some easy tweaks you can make in the code:
 
 ## Possible Improvements
 
-- Add enemy projectiles and boss levels
 - Randomized spawn positions at the start of each level

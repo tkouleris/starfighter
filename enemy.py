@@ -4,6 +4,9 @@ import random
 
 
 class Enemy:
+    # Frames between shots, picked at random from this range
+    FIRE_INTERVAL = (90, 240)
+
     def __init__(self, window, x, y, animation, velocity=3):
         self.window = window
         self.visible = True
@@ -26,6 +29,17 @@ class Enemy:
         self.move_index = 0
         self.anchor_x = x
         self.anchor_y = y
+        self.fire_timer = random.randint(*self.FIRE_INTERVAL)
+
+    def ready_to_fire(self):
+        # Only fire from the top half of the screen, so shots are never point-blank
+        if not self.visible or not 0 <= self.y <= self.window.get_height() // 2:
+            return False
+        self.fire_timer -= 1
+        if self.fire_timer > 0:
+            return False
+        self.fire_timer = random.randint(*self.FIRE_INTERVAL)
+        return True
 
     def draw(self):
         if self.visible:
