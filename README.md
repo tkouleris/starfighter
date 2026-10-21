@@ -30,7 +30,8 @@ Each new level adds one more enemy to the screen, so the game gets progressively
 
 - Main menu with **Start** / **High Scores** / **Settings** / **Quit** options and sound feedback
 - Player spaceship with free movement in four directions
-- Shooting with sound effects
+- Auto-fire with multiple bullets on screen and sound effects
+- **Weapon power-ups** (Double, Spread, Rapid) dropped by destroyed enemies
 - Enemies with different movement patterns (straight line and zig-zag) and random speeds
 - Increasing difficulty: level *N* spawns *N* enemies
 - Lives system (3 lives) with a "Game Over / Play again" screen
@@ -124,8 +125,18 @@ python main.py
 - Enemies fly downwards using either a straight-line or a zig-zag pattern, at a random speed.
 - Enemies that leave the bottom of the screen re-enter from the top at a random horizontal position,
   so **every enemy must be destroyed** to clear the level.
-- Only **one bullet** can be on screen at a time; you can fire again once the previous bullet hits a
-  target or leaves the screen.
+- Hold **Fire** to shoot continuously; each weapon has its own fire rate.
+- Destroyed enemies have a 15% chance to drop a **power-up**. Fly into it to switch weapons for
+  10 seconds (shown under the score), after which you go back to the Blaster:
+
+  | Power-up | Weapon | Effect |
+  |----------|--------|--------|
+  | — | Blaster | Default single shot |
+  | **D** (blue) | Double | Two parallel shots |
+  | **S** (orange) | Spread | Three shots fanning out |
+  | **R** (purple) | Rapid | Single shot, about three times the fire rate |
+
+- Losing a life resets your weapon to the Blaster.
 - If an enemy collides with your ship it explodes, you **lose a life** and the current level restarts.
 - When all your lives are gone the **Game Over** screen appears and you can choose to play again.
 
@@ -161,6 +172,8 @@ starfighter/
 ├── enemy.py              # Enemy spaceship
 ├── enemy_animations.py   # Enemy movement patterns (line, zig_zag, circle)
 ├── bullet.py             # Player bullet
+├── weapons.py            # Weapon definitions (Blaster, Double, Spread, Rapid)
+├── power_up.py           # Falling weapon power-up
 ├── collision.py          # Hitbox-based collision detection
 ├── explosion.py          # Procedural particle explosion animation
 ├── high_scores.py        # Top 10 high-score table, stored in highscores.json
@@ -180,15 +193,16 @@ initials entry), detects when all enemies are destroyed (and their explosions ha
 advance to the next level, and draws the in-between screens ("Lives / Level / Score" and "Game Over").
 
 ### `game.py` – `Game`
-Holds the overall game state: current level, score, player, enemies, bullet, explosions,
+Holds the overall game state: current level, score, player, enemies, bullets, power-ups, the current
+weapon, explosions,
 backgrounds and sounds. It is the only place that creates the game window (`pygame.display.set_mode`);
 every other screen draws onto the existing window.
 
 - `init_game()` – creates `level` enemies with a random movement pattern and speed (3–5),
   clears explosions, resets the player position and un-pauses the game.
 - `handle()` – processes keyboard input for movement and shooting, draws the background,
-  bullet, player, enemies, explosions and score, respawns enemies that leave the screen and checks
-  collisions (bullet ↔ enemy and enemy ↔ player). After the player is hit, it waits for the
+  bullets, player, enemies, power-ups, explosions, score and active weapon, respawns enemies that leave the screen and checks
+  collisions (bullet ↔ enemy, enemy ↔ player and power-up ↔ player). After the player is hit, it waits for the
   explosion to finish before taking a life and pausing.
 
 ### `menu.py` – `Menu`
@@ -238,8 +252,18 @@ Movement functions that operate on an enemy object:
 - `circle` – a small looping offset pattern (currently defined but not used by the game).
 
 ### `bullet.py` – `Bullet`
-The player's projectile. It travels upward at 5 pixels per frame and becomes invisible when it
-reaches the top of the screen.
+A single player projectile; `Game` creates a new one per shot. It travels upward at 5 pixels per
+frame, plus an optional sideways velocity (`dx`) used by the Spread weapon, and becomes invisible
+when it leaves the screen or hits an enemy.
+
+### `weapons.py` – `Weapon`
+Each weapon has a name, a cooldown (frames between shots), a list of shots as
+`(x offset, sideways velocity)` pairs and a power-up colour. `POWER_UPS` lists the weapons enemies
+can drop.
+
+### `power_up.py` – `PowerUp`
+A procedurally drawn coloured circle with the weapon's initial that falls from where an enemy was
+destroyed. It is collected by touching the player's hitbox.
 
 ### `collision.py` – `Collision`
 `check(object_1, object_2, sound=None)` tests whether two visible objects' hitboxes overlap
@@ -276,6 +300,8 @@ Some easy tweaks you can make in the code:
 - **Window size** – `window_width` / `window_height` in `game.py` (default 640×480).
 - **Player speed** – the `± 2` steps in `Game.handle()`.
 - **Bullet speed** – `bullet_velocity` in `bullet.py`.
+- **Weapons** – `cooldown` and `shots` in `weapons.py`; add a new `Weapon` to `POWER_UPS` to make it droppable.
+- **Power-up drop rate and duration** – `POWER_UP_CHANCE` and `POWER_UP_DURATION` in `game.py`.
 - **Enemy speed** – the `random.randint(3, 5)` range in `Game.init_game()`.
 - **Starting lives** – `self.lives` in `player.py`.
 - **Points per enemy** – the `10 * self.level` value in `Game.handle()`.
@@ -291,7 +317,6 @@ Some easy tweaks you can make in the code:
 ## Known Limitations
 
 - The game must be started from the project root, otherwise assets cannot be found.
-- Only one bullet can be on screen at a time.
 - At the start of each level all enemies spawn at the same position.
 - The `circle` movement pattern is implemented but not used.
 
@@ -299,6 +324,5 @@ Some easy tweaks you can make in the code:
 
 ## Possible Improvements
 
-- Allow multiple bullets / different weapons
 - Add enemy projectiles and boss levels
 - Randomized spawn positions at the start of each level
