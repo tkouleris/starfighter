@@ -31,7 +31,7 @@ Each new level adds one more enemy to the screen, so the game gets progressively
 - Player spaceship with free movement in four directions
 - Auto-fire with multiple bullets on screen and sound effects
 - **Weapon power-ups** (Double, Spread, Rapid) dropped by destroyed enemies
-- Enemies with different movement patterns (straight line and zig-zag) and random speeds
+- Enemies with different movement patterns (straight line, zig-zag and circle) and random speeds
 - Enemies shoot aimed projectiles at the player
 - Increasing difficulty: level *N* spawns *N* enemies
 - **Boss fight every 5th level**: a large ship with a health bar and alternating attack patterns
@@ -123,7 +123,7 @@ python main.py
 
 - You start at **level 1** with **3 lives**.
 - Each level spawns as many enemies as the level number (level 1 → 1 enemy, level 5 → 5 enemies, ...).
-- Enemies fly downwards using either a straight-line or a zig-zag pattern, at a random speed.
+- Enemies fly downwards using a straight-line, zig-zag or circling pattern, at a random speed.
 - Enemies that leave the bottom of the screen re-enter from the top at a random horizontal position,
   so **every enemy must be destroyed** to clear the level.
 - Hold **Fire** to shoot continuously; each weapon has its own fire rate.
@@ -352,4 +352,3 @@ Some easy tweaks you can make in the code:
 ## Known Limitations
 
 - The game must be started from the project root, otherwise assets cannot be found.
-- The `circle` movement pattern is implemented but not used.

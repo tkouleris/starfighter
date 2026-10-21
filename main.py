@@ -45,10 +45,7 @@ def main():
                     match choice:
                         case PauseMenu.MAIN_MENU:
                             menu.handle()
-                            game.player.lives = 3
-                            game.level = 1
-                            game.score = 0
-                            game.init_game()
+                            game.new_game()
                         case PauseMenu.QUIT:
                             running = False
                 elif event.key == pygame.K_ESCAPE:
@@ -67,11 +64,8 @@ def main():
                     time.sleep(0.5)
                     game.init_game()
                 if game.paused and game.player.lives <= 0 and score_recorded and event.key == pygame.K_y:
-                    game.player.lives = 3
-                    game.level = 1
-                    game.score = 0
                     score_recorded = False
-                    game.init_game()
+                    game.new_game()
                 if game.paused and game.player.lives <= 0 and score_recorded and event.key == pygame.K_n:
                     running = False
 
@@ -83,14 +77,14 @@ def main():
         if game.paused and game.player.lives > 0:
             clock.tick(5)
             text = font.render("Lives: " + str(game.player.lives), 1, (255, 0, 0))
-            screen.blit(text, (250 - (text.get_width() / 2), 200))
+            screen.blit(text, (320 - (text.get_width() / 2), 200))
             text = font.render("Level " + str(game.level), 1, (255, 0, 0))
-            screen.blit(text, (250 - (text.get_width() / 2), 250))
+            screen.blit(text, (320 - (text.get_width() / 2), 250))
             text = font.render("Score: " + str(game.score), 1, (255, 0, 0))
-            screen.blit(text, (250 - (text.get_width() / 2), 300))
+            screen.blit(text, (320 - (text.get_width() / 2), 300))
             if game.is_boss_level():
                 text = font.render("BOSS INCOMING!", 1, (255, 200, 0))
-                screen.blit(text, (250 - (text.get_width() / 2), 150))
+                screen.blit(text, (320 - (text.get_width() / 2), 150))
 
         if game.paused and game.player.lives <= 0:
             if not score_recorded and name_entry is None:

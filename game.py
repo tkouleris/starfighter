@@ -72,6 +72,16 @@ class Game:
     def level_cleared(self):
         return not any(enemy.visible for enemy in self.enemies) and not (self.boss and self.boss.visible)
 
+    def new_game(self):
+        # Full reset for a fresh game, unlike init_game() which only restarts the current level
+        self.player.lives = 3
+        self.player.visible = True
+        self.level = 1
+        self.score = 0
+        self.weapon = BLASTER
+        self.weapon_timer = 0
+        self.init_game()
+
     def init_game(self):
         self.enemies = []
         self.boss = None
