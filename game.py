@@ -53,7 +53,7 @@ class Game:
         self.font = pygame.font.SysFont('comicsans', 20, True, True)
         pygame.display.set_caption("Star Fighter")
         self.bullet_image = pygame.image.load(path.join('assets', '16x32_spaceship_shot_2.png'))
-        self.enemy_movement = [line, zig_zag]
+        self.enemy_movement = [line, zig_zag, circle]
         self.player = Player(self.win, (self.window_width // 2) - (32 // 2), self.window_height - 32 - 5)
         self.init_game()
 
@@ -64,8 +64,10 @@ class Game:
         self.power_ups = []
         self.fire_cooldown = 0
         for index in range(self.level):
+            # Spread enemies across the width and stagger them above the screen so they fly in one by one
             self.enemies.append(
-                Enemy(self.win, 100, 100, self.enemy_movement[random.randint(0, 1)], random.randint(3, 5)))
+                Enemy(self.win, random.randint(0, self.window_width - 32), -32 - index * 60,
+                      random.choice(self.enemy_movement), random.randint(3, 5)))
 
         self.init_spaceship_x = (self.window_width // 2) - (32 // 2)
         self.init_spaceship_y = self.window_height - 32 - 5
@@ -133,8 +135,8 @@ class Game:
             for enemy in self.enemies:
                 enemy.draw()
                 if enemy.y >= self.window_height:
-                    x = random.randint(32, 448)
-                    enemy.set_init(x, 0, self.enemy_movement[random.randint(0, 1)])
+                    x = random.randint(0, self.window_width - 32)
+                    enemy.set_init(x, -32, random.choice(self.enemy_movement))
                 for bullet in self.bullets:
                     if self.collision.check(enemy, bullet, self.explosion):
                         self.score += 10 * self.level

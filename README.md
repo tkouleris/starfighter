@@ -242,14 +242,16 @@ The 32×32 player spaceship. Stores its position, hitbox, visibility and number 
 ### `enemy.py` – `Enemy`
 A 32×32 enemy ship. Each enemy receives a movement function (animation) and a velocity.
 `draw()` moves the enemy using its animation, updates its hitbox and renders it.
-`set_init()` repositions the enemy and assigns a new movement pattern.
+`set_init()` repositions the enemy, assigns a new movement pattern and resets its pattern state.
 
 ### `enemy_animations.py`
 Movement functions that operate on an enemy object:
 
 - `line` – moves straight down.
-- `zig_zag` – moves down while swinging left and right, staying within the window bounds.
-- `circle` – a small looping offset pattern (currently defined but not used by the game).
+- `zig_zag` – moves down while swinging left and right in legs of random length, bouncing off the window edges.
+- `circle` – orbits a centre point that slowly sinks down the screen, clockwise or anticlockwise.
+
+Enemies spawn at random horizontal positions, staggered above the screen, and fly in one by one.
 
 ### `bullet.py` – `Bullet`
 A single player projectile; `Game` creates a new one per shot. It travels upward at 5 pixels per
@@ -298,7 +300,7 @@ but can be swapped in.
 Some easy tweaks you can make in the code:
 
 - **Window size** – `window_width` / `window_height` in `game.py` (default 640×480).
-- **Player speed** – the `± 2` steps in `Game.handle()`.
+- **Player speed** – `SHIP_SPEED` and `SHIP_RESPONSIVENESS` in `game.py`.
 - **Bullet speed** – `bullet_velocity` in `bullet.py`.
 - **Weapons** – `cooldown` and `shots` in `weapons.py`; add a new `Weapon` to `POWER_UPS` to make it droppable.
 - **Power-up drop rate and duration** – `POWER_UP_CHANCE` and `POWER_UP_DURATION` in `game.py`.
@@ -310,14 +312,13 @@ Some easy tweaks you can make in the code:
   (delete `settings.json` to return to them).
 - **Explosion look** – `size`, `duration` and `colors` in `explosion.py`.
 - **Movement patterns** – add new functions to `enemy_animations.py`, include them in
-  `Game.enemy_movement` and update the `random.randint(0, 1)` range that picks them.
+  `Game.enemy_movement`.
 
 ---
 
 ## Known Limitations
 
 - The game must be started from the project root, otherwise assets cannot be found.
-- At the start of each level all enemies spawn at the same position.
 - The `circle` movement pattern is implemented but not used.
 
 ---

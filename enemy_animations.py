@@ -1,21 +1,24 @@
 import math
+import random
+
+# Enemies are 32x32
+ENEMY_SIZE = 32
 
 
 def zig_zag(object):
-    if object.direction >= 40:
-        object.direction = 0
-    if object.direction <= -40:
-        object.direction = 1
-    min_x = object.x - object.velocity
-    max_x = object.x + object.velocity
+    # Swing sideways in legs of random length, bouncing off the window edges
+    object.move_index -= 1
+    if object.move_index <= 0:
+        object.direction = -object.direction
+        object.move_index = random.randint(30, 60)
 
-    if object.direction >= 1 and max_x <= object.window.get_width():
-        object.x += object.velocity
-        object.direction += 1
-    if object.direction <= 0 and min_x >= 0 :
-        object.x -= object.velocity
-        object.direction -= 1
-    object.y += object.velocity
+    object.x += object.direction * object.velocity
+    max_x = object.window.get_width() - ENEMY_SIZE
+    if object.x <= 0 or object.x >= max_x:
+        object.x = max(0, min(max_x, object.x))
+        object.direction = -object.direction
+        object.move_index = random.randint(30, 60)
+    object.y += object.velocity * 0.75
 
 
 def line(object):
@@ -23,13 +26,16 @@ def line(object):
 
 
 def circle(object):
-    movement = [
-        (0,0), (1,1),(2,2), (3,3), (4,4), (5, 5),
-        (5, 5), (4, 4), (3, 3), (2, 2), (1, 1), (0, 0)
-    ]
-    object.x = movement[object.move_index][0] + object.x
-    object.y = movement[object.move_index][1] + object.y
+    # Orbit a centre point that slowly sinks down the screen
+    radius = 50
+    if object.move_index == 0:
+        # Keep the whole orbit inside the window
+        object.anchor_x = max(radius, min(object.window.get_width() - ENEMY_SIZE - radius, object.x))
+        object.anchor_y = object.y
     object.move_index += 1
-    if object.move_index > len(movement) - 1:
-        object.move_index = 0
 
+    # Angular speed chosen so the ship's speed along the orbit matches its velocity
+    angle = object.direction * object.move_index * object.velocity / radius
+    object.anchor_y += object.velocity * 0.4
+    object.x = object.anchor_x + radius * math.sin(angle)
+    object.y = object.anchor_y - radius * math.cos(angle) + radius
