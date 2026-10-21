@@ -1,4 +1,5 @@
 import json
+import logging
 import pygame
 
 
@@ -19,8 +20,12 @@ class HighScores:
             return []
 
     def save(self):
-        with open(self.FILE, 'w', encoding='utf-8') as file:
-            json.dump(self.entries, file, indent=2)
+        # A failed save (e.g. read-only folder) must not crash the game; the table still shows this session's scores
+        try:
+            with open(self.FILE, 'w', encoding='utf-8') as file:
+                json.dump(self.entries, file, indent=2)
+        except OSError as error:
+            logging.warning("Could not save %s: %s", self.FILE, error)
 
     def qualifies(self, score):
         if score <= 0:

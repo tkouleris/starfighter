@@ -1,4 +1,5 @@
 import json
+import logging
 import pygame
 
 
@@ -39,8 +40,12 @@ class Settings:
             'sfx_volume': self.sfx_volume,
             'controls': {action: pygame.key.name(key) for action, key in self.controls.items()},
         }
-        with open(self.FILE, 'w', encoding='utf-8') as file:
-            json.dump(data, file, indent=2)
+        # A failed save (e.g. read-only folder) must not crash the game; the settings still apply this session
+        try:
+            with open(self.FILE, 'w', encoding='utf-8') as file:
+                json.dump(data, file, indent=2)
+        except OSError as error:
+            logging.warning("Could not save %s: %s", self.FILE, error)
 
     def clamp(self, volume):
         return max(0, min(self.MAX_VOLUME, volume))
