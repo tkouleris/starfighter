@@ -64,7 +64,7 @@ def main():
                         name_entry += event.unicode.upper()
             if event.type == pygame.KEYUP:
                 if game.paused and game.player.lives > 0 and event.key == pygame.K_SPACE:
-                    time.sleep(2)
+                    time.sleep(0.5)
                     game.init_game()
                 if game.paused and game.player.lives <= 0 and score_recorded and event.key == pygame.K_y:
                     game.player.lives = 3
