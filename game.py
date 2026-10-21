@@ -50,8 +50,7 @@ class Game:
         self.window_width = 640
         self.window_height = 480
         self.win = pygame.display.set_mode((self.window_width, self.window_height))
-        self.bg = [pygame.image.load(path.join('assets', '1.jpg')), pygame.image.load(path.join('assets', '2.jpg')),
-                   pygame.image.load(path.join('assets', '3.jpg'))]
+        self.bg = [pygame.image.load(path.join('assets', name)).convert() for name in ('1.jpg', '2.jpg', '3.jpg')]
         self.bg_x = 0
         self.bg_y = 0
         self.bullet_sound = pygame.mixer.Sound(path.join('assets', 'sounds', 'bullet.mp3'))
@@ -61,7 +60,7 @@ class Game:
         self.collision = Collision()
         self.font = pygame.font.SysFont('comicsans', 20, True, True)
         pygame.display.set_caption("Star Fighter")
-        self.bullet_image = pygame.image.load(path.join('assets', '16x32_spaceship_shot_2.png'))
+        self.bullet_image = pygame.image.load(path.join('assets', '16x32_spaceship_shot_2.png')).convert_alpha()
         self.enemy_movement = [line, zig_zag, circle]
         self.player = Player(self.win, (self.window_width // 2) - (32 // 2), self.window_height - 32 - 5)
         self.init_game()

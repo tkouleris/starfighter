@@ -1,3 +1,4 @@
+import sys
 from os import path
 import pygame
 from settings import Settings
@@ -33,7 +34,7 @@ class SettingsMenu:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    exit()
+                    sys.exit()
                 option = self.options[select][0]
                 if waiting:
                     # P is reserved for opening the pause menu during play

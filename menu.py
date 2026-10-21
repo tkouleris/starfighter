@@ -1,4 +1,4 @@
-import time
+import sys
 from os import path
 import pygame
 
@@ -8,7 +8,7 @@ class Menu:
     def __init__(self, high_scores, settings_menu):
         self.high_scores = high_scores
         self.settings_menu = settings_menu
-        self.bg = pygame.image.load(path.join('assets', 'menu_bg.png'))
+        self.bg = pygame.image.load(path.join('assets', 'menu_bg.png')).convert()
         self.change = pygame.mixer.Sound(path.join('assets', 'sounds', 'change.mp3'))
         settings_menu.settings.register_sound(self.change)
         self.clock = pygame.time.Clock()
@@ -32,7 +32,7 @@ class Menu:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    exit()
+                    sys.exit()
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_DOWN:
                         self.change.play()
@@ -54,7 +54,6 @@ class Menu:
                         self.selections[temp_selection] = not_selection_color
                     if event.key == pygame.K_RETURN:
                         self.change.play()
-                        time.sleep(1)
                         match self.select:
                             case 0:
                                 return
@@ -64,7 +63,7 @@ class Menu:
                                 self.settings_menu.handle()
                             case 3:
                                 pygame.quit()
-                                exit()
+                                sys.exit()
 
 
             screen = pygame.display.get_surface()
@@ -88,7 +87,7 @@ class Menu:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
-                    exit()
+                    sys.exit()
                 if event.type == pygame.KEYUP and event.key in (pygame.K_RETURN, pygame.K_ESCAPE):
                     self.change.play()
                     return

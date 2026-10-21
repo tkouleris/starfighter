@@ -8,7 +8,7 @@ class Player:
         self.window = window
         self.x = x
         self.y = y
-        self.image = pygame.image.load(path.join('assets', '32x32_spaceship.png'))
+        self.image = pygame.image.load(path.join('assets', '32x32_spaceship.png')).convert_alpha()
         self.height = 32
         self.width = 32
         self.visible = True

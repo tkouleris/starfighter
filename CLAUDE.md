@@ -17,7 +17,7 @@ There are no tests, linter or build configuration in this repo.
 
 ## Architecture
 
-- **Assets are loaded via relative paths** (`path.join('assets', ...)`) inside class constructors, so the working directory must be the repo root, and `pygame.init()` must run before `Game`/`Menu` are constructed.
+- **Assets are loaded via relative paths** (`path.join('assets', ...)`) inside class constructors, so the working directory must be the repo root, and `pygame.init()` must run before `Game`/`Menu` are constructed. Images are `.convert()`/`.convert_alpha()`ed, which needs the window, so `Game` (which calls `set_mode`) must be constructed before `Menu` or any sprite. `Enemy` and `Boss` cache their images as class attributes, loaded on first construction.
 - **Control flow is split between `main.py` and `Game`.** `main.py` owns the 60 FPS loop, the event queue (quit/Esc, Space to continue, Y/N on game over), level advancement (when no enemy is `visible`, it sets `game.paused = True` and increments `game.level`), and draws the "Lives/Level" and "Game Over" screens. `Game.handle()` only polls held keys (`pygame.key.get_pressed()`) for movement/shooting, renders, and runs collisions — and does nothing while `paused`.
 - **`Game.paused` is the state machine.** Paused + lives > 0 → between rounds (level cleared or a life lost); paused + lives <= 0 → game over. `Game.init_game()` rebuilds the enemy list for the current `level` and un-pauses. Losing a life pauses without changing `level`, so the same level replays.
 - **`Menu.handle()` is a separate blocking loop** run once before the main loop; it calls `exit()` directly on Quit.

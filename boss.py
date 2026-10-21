@@ -12,15 +12,19 @@ class Boss:
     HOVER_Y = 40
     # Frames the boss stays highlighted after taking a hit
     FLASH_FRAMES = 4
+    # Shared by every boss; loaded on first use because convert_alpha() needs the window to exist
+    image = None
+    flash_image = None
 
     def __init__(self, window, number):
         # number is 1 for the first boss, 2 for the second, ...
         self.window = window
         self.visible = True
-        self.image = pygame.transform.smoothscale(pygame.image.load(path.join('assets', 'enemy_1.png')),
-                                                  (self.WIDTH, self.HEIGHT))
-        self.flash_image = self.image.copy()
-        self.flash_image.fill((120, 120, 120), special_flags=pygame.BLEND_RGB_ADD)
+        if Boss.image is None:
+            Boss.image = pygame.transform.smoothscale(
+                pygame.image.load(path.join('assets', 'enemy_1.png')).convert_alpha(), (self.WIDTH, self.HEIGHT))
+            Boss.flash_image = Boss.image.copy()
+            Boss.flash_image.fill((120, 120, 120), special_flags=pygame.BLEND_RGB_ADD)
         self.max_health = 25 + 15 * (number - 1)
         self.health = self.max_health
         self.speed = 1.5 + 0.25 * number

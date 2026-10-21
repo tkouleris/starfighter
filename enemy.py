@@ -6,11 +6,14 @@ import random
 class Enemy:
     # Frames between shots, picked at random from this range
     FIRE_INTERVAL = (90, 240)
+    # Shared by every enemy; loaded on first use because convert_alpha() needs the window to exist
+    image = None
 
     def __init__(self, window, x, y, animation, velocity=3):
         self.window = window
         self.visible = True
-        self.image = pygame.image.load(path.join('assets', '32x32_enemy_1.png'))
+        if Enemy.image is None:
+            Enemy.image = pygame.image.load(path.join('assets', '32x32_enemy_1.png')).convert_alpha()
         self.height = 32
         self.width = 32
         self.velocity = velocity
